@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0c0c0e;
+    --bg-sidebar: #101012;
+    --bg-elevated: #18181b;
+    --bg-hover: #1f1f23;
+    --red: #e0293a;
+    --red-dim: #7a1420;
+    --red-glow: rgba(224,41,58,0.35);
+    --text: #ececec;
+    --text-muted: #8c8c92;
+    --border: #232327;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  ::selection { background: var(--red-dim); color: #fff; }
+
+  button, select, input, textarea { font-family: inherit; }
+
+  /* ---------- Layout ---------- */
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app.sidebar-collapsed .sidebar { display: none; }
+
+  .sidebar-reopen-btn {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 30;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .sidebar-reopen-btn:hover { border-color: var(--red); color: var(--red); }
+  .app.sidebar-collapsed .sidebar-reopen-btn { display: flex; }
+  .app.sidebar-collapsed .top-bar { padding-top: 58px; }
+
+  .brand {
+    padding: 22px 16px 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .brand h1 span { color: var(--red); }
+
+  .brand p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .icon-toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-toggle-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .new-note-btn {
+    margin: 14px 16px 8px;
+    padding: 10px 14px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: box-shadow .15s ease, transform .1s ease, background .15s ease;
+  }
+  .new-note-btn:hover { background: #c62230; box-shadow: 0 0 0 4px var(--red-glow); }
+  .new-note-btn:active { transform: scale(0.98); }
+  .new-note-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  /* ---------- File save / load ---------- */
+  .file-actions {
+    display: flex;
+    gap: 8px;
+    margin: 0 16px 10px;
+  }
+  .file-btn {
+    flex: 1;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: border-color .12s ease, color .12s ease;
+  }
+  .file-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .save-indicator {
+    margin: 0 16px 14px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .save-indicator .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .save-indicator.unsaved .dot { background: var(--red); }
+  .save-indicator.unsaved { color: var(--red); }
+
+  .note-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 10px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .note-item {
+    position: relative;
+    padding: 11px 12px 11px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-bottom: 4px;
+    margin-top: 8px;
+    transition: background .12s ease;
+    border: 1px solid transparent;
+  }
+  .note-item:hover { background: var(--bg-hover); }
+  .note-item.active { background: var(--bg-elevated); border-color: var(--border); }
+  .note-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    background: var(--red);
+    border-radius: 2px;
+  }
+  .note-item .title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .note-item .preview {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .note-item .del-btn {
+    position: absolute;
+    right: 8px; top: 10px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+    opacity: 0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: opacity .12s ease, color .12s ease, background .12s ease;
+  }
+  .note-item:hover .del-btn { opacity: 1; }
+  .note-item .del-btn:hover { color: var(--red); background: rgba(224,41,58,0.12); }
+
+  .empty-list {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  /* ---------- Main ---------- */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 28px 0;
+  }
+
+  .title-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    outline: none;
+    padding: 4px 0;
+    min-width: 0;
+  }
+  .title-input::placeholder { color: #4a4a4e; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 24px;
+    margin: 14px 28px 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .toolbar.hidden { display: none; }
+
+  .tb-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s ease, border-color .12s ease;
+  }
+  .tb-btn:hover { background: var(--bg-hover); }
+  .tb-btn.active { background: var(--red-dim); border-color: var(--red); color: #fff; }
+  .tb-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; }
+  .tb-btn.b { font-weight: 700; }
+  .tb-btn.i { font-style: italic; font-family: Georgia, serif; }
+  .tb-btn.u { text-decoration: underline; }
+  .tb-btn.s { text-decoration: line-through; }
+
+  .tb-sep {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 6px;
+  }
+
+  .tb-select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12.5px;
+    padding: 6px 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .tb-select:hover { border-color: var(--text-muted); }
+
+  .editor-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 28px 60px;
+    position: relative;
+  }
+
+  .editor {
+    max-width: 780px;
+    min-height: 100%;
+    outline: none;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .editor:empty::before {
+    content: attr(data-placeholder);
+    color: #4a4a4e;
+  }
+
+  .editor table.note-table {
+    border-collapse: collapse;
+    margin: 14px 0;
+    width: 100%;
+  }
+  .editor table.note-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    min-width: 60px;
+    outline: none;
+  }
+  .editor table.note-table td:focus { background: var(--bg-elevated); }
+
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 4px 0;
+    padding: 2px 4px 2px 0;
+    border-radius: 5px;
+  }
+  .checklist-item:hover { background: rgba(255,255,255,0.03); }
+  .checklist-item input[type="checkbox"] {
+    margin-top: 4px;
+    width: 15px;
+    height: 15px;
+    accent-color: var(--red);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checklist-item span {
+    outline: none;
+    flex: 1;
+  }
+  .checklist-item.checked span {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+  .checklist-del-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: opacity .12s ease, color .12s ease, background .12s ease;
+  }
+  .checklist-item:hover .checklist-del-btn { opacity: 1; }
+  .checklist-del-btn:hover { color: var(--red); background: rgba(224,41,58,0.12); }
+
+  /* ---------- Floating table toolbar ---------- */
+  .table-toolbar {
+    display: none;
+    position: absolute;
+    z-index: 10;
+    align-items: center;
+    gap: 3px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--red-dim);
+    border-radius: 7px;
+    padding: 5px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  }
+  .table-toolbar button {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .table-toolbar button:hover { background: var(--bg-hover); }
+  .table-toolbar button.tt-delete { color: var(--red); }
+  .table-toolbar button.tt-delete:hover { background: rgba(224,41,58,0.15); }
+  .table-toolbar .tb-sep { margin: 0 2px; }
+
+  /* ---------- Toolbar FAB (fixed, always in DOM) ---------- */
+  .toolbar-fab {
+    display: none;
+    position: fixed;
+    right: 26px;
+    bottom: 26px;
+    z-index: 40;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--red);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    transition: background .15s ease, box-shadow .15s ease, transform .1s ease;
+  }
+  .toolbar-fab.visible { display: flex; }
+  .toolbar-fab svg { width: 21px; height: 21px; }
+  .toolbar-fab:hover { background: #c62230; box-shadow: 0 0 0 6px var(--red-glow); }
+  .toolbar-fab:active { transform: scale(0.95); }
+  .toolbar-fab.active { background: var(--bg-elevated); border: 1px solid var(--red); color: var(--red); }
+  .toolbar-fab:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    width: 280px;
+  }
+  .modal-box h3 {
+    margin: 0 0 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .modal-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .modal-row label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .modal-row input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    outline: none;
+  }
+  .modal-row input:focus { border-color: var(--red); }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .modal-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-btn.cancel { background: var(--bg-hover); color: var(--text-muted); }
+  .modal-btn.cancel:hover { color: var(--text); }
+  .modal-btn.confirm { background: var(--red); color: #fff; }
+  .modal-btn.confirm:hover { background: #c62230; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 14px;
+  }
+  .empty-state .mark {
+    width: 46px; height: 46px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--red);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+  }
+
+  @media (max-width: 720px) {
+    .sidebar { width: 220px; }
+    .toolbar { margin: 14px 12px 0; padding: 10px; }
+    .top-bar, .editor-wrap { padding-left: 14px; padding-right: 14px; }
+    .top-bar { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="appRoot">
+  <button class="sidebar-reopen-btn" id="reopenSidebarBtn" title="Verlauf öffnen">☰</button>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-row">
+        <h1>NOTOX<span>.</span></h1>
+        <button class="icon-toggle-btn" id="collapseSidebarBtn" title="Verlauf schließen">✕</button>
+      </div>
+      <p>deine Notizen als Datei</p>
+    </div>
+    <button class="new-note-btn" id="newNoteBtn">+ Neue Notiz</button>
+    <div class="file-actions">
+      <button class="file-btn" id="exportBtn" title="Alle Notizen als JSON-Datei speichern">⬇ Speichern</button>
+      <button class="file-btn" id="importBtn" title="Notizen aus JSON-Datei laden">⬆ Laden</button>
+      <input type="file" id="importInput" accept="application/json,.json" style="display:none">
+    </div>
+    <div class="save-indicator" id="saveIndicator"><span class="dot"></span><span id="saveIndicatorText">Alle Änderungen gespeichert</span></div>
+    <div class="note-list" id="noteList"></div>
+  </aside>
+
+  <main class="main" id="mainView">
+    <!-- gefüllt via JS -->
+  </main>
+
+  <button class="toolbar-fab" id="toolbarToggleBtn" title="Formatierung ein-/ausblenden">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+    </svg>
+  </button>
+</div>
+
+<script>
+(function(){
+  const noteListEl = document.getElementById('noteList');
+  const mainView = document.getElementById('mainView');
+  const newNoteBtn = document.getElementById('newNoteBtn');
+  const appRoot = document.getElementById('appRoot');
+  const reopenSidebarBtn = document.getElementById('reopenSidebarBtn');
+  const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const importInput = document.getElementById('importInput');
+  const saveIndicator = document.getElementById('saveIndicator');
+  const saveIndicatorText = document.getElementById('saveIndicatorText');
+  const toolbarToggleBtn = document.getElementById('toolbarToggleBtn');
+
+  let notes = [];
+  let currentId = null;
+  let saveTimer = null;
+  let toolbarVisible = false;
+  let outsideClickHandler = null;
+  let unsavedChanges = false;
+
+  /* ---------- Sidebar toggle ---------- */
+  function setSidebarCollapsed(collapsed){
+    appRoot.classList.toggle('sidebar-collapsed', collapsed);
+  }
+  collapseSidebarBtn.addEventListener('click', () => setSidebarCollapsed(true));
+  reopenSidebarBtn.addEventListener('click', () => setSidebarCollapsed(false));
+
+  /* ---------- Toolbar FAB (fixed, persistent element) ---------- */
+  toolbarToggleBtn.addEventListener('click', () => {
+    toolbarVisible = !toolbarVisible;
+    const toolbarEl = document.getElementById('toolbar');
+    if (toolbarEl) toolbarEl.classList.toggle('hidden', !toolbarVisible);
+    toolbarToggleBtn.classList.toggle('active', toolbarVisible);
+  });
+
+  function updateFabVisibility(){
+    toolbarToggleBtn.classList.toggle('visible', !!currentId);
+  }
+
+  /* ---------- Unsaved-changes indicator ---------- */
+  function markUnsaved(){
+    unsavedChanges = true;
+    saveIndicator.classList.add('unsaved');
+    saveIndicatorText.textContent = 'Ungespeicherte Änderungen';
+  }
+  function markSaved(){
+    unsavedChanges = false;
+    saveIndicator.classList.remove('unsaved');
+    saveIndicatorText.textContent = 'Alle Änderungen gespeichert';
+  }
+
+  /* ---------- JSON file export / import ---------- */
+  function exportNotes(){
+    const payload = JSON.stringify(notes, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'notox-notizen-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    markSaved();
+  }
+
+  function importNotesFromFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch(e){
+        alert('Die Datei ist keine gültige JSON-Datei.');
+        return;
+      }
+      if (!Array.isArray(parsed)){
+        alert('Die Datei enthält keine gültige Notizenliste.');
+        return;
+      }
+      if (notes.length > 0 && !confirm('Deine aktuell geöffneten Notizen werden durch die Datei ersetzt. Fortfahren?')){
+        return;
+      }
+      notes = parsed.map(n => ({
+        id: n.id || uid(),
+        title: typeof n.title === 'string' ? n.title : '',
+        html: typeof n.html === 'string' ? n.html : '',
+        updatedAt: n.updatedAt || Date.now()
+      }));
+      currentId = null;
+      markSaved();
+      renderList();
+      const list = sortedNotes();
+      if (list.length > 0) selectNote(list[0].id);
+      else { renderEmptyState(); updateFabVisibility(); }
+    };
+    reader.readAsText(file);
+  }
+
+  exportBtn.addEventListener('click', exportNotes);
+  importBtn.addEventListener('click', () => importInput.click());
+  importInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importNotesFromFile(file);
+    importInput.value = '';
+  });
+
+  /* ---------- Helpers ---------- */
+  function uid(){ return 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+  function textPreview(html){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html || '';
+    const t = tmp.textContent || tmp.innerText || '';
+    return t.trim().slice(0, 70) || 'Kein Inhalt';
+  }
+
+  function sortedNotes(){
+    return [...notes].sort((a,b) => b.updatedAt - a.updatedAt);
+  }
+
+  function escapeAttr(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML.replace(/"/g, '&quot;');
+  }
+
+  /* ---------- Sidebar rendering ---------- */
+  function renderList(){
+    noteListEl.innerHTML = '';
+    const list = sortedNotes();
+    if (list.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-list';
+      empty.textContent = 'Noch keine Notizen. Leg los mit „+ Neue Notiz" oder lade eine Datei.';
+      noteListEl.appendChild(empty);
+      return;
+    }
+    list.forEach(note => {
+      const item = document.createElement('div');
+      item.className = 'note-item' + (note.id === currentId ? ' active' : '');
+      item.dataset.id = note.id;
+
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = note.title || 'Ohne Titel';
+
+      const preview = document.createElement('div');
+      preview.className = 'preview';
+      preview.textContent = textPreview(note.html);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.innerHTML = '&times;';
+      delBtn.title = 'Notiz löschen';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteNote(note.id);
+      });
+
+      item.appendChild(title);
+      item.appendChild(preview);
+      item.appendChild(delBtn);
+      item.addEventListener('click', () => selectNote(note.id));
+      noteListEl.appendChild(item);
+    });
+  }
+
+  /* ---------- Editor rendering ---------- */
+  function renderEmptyState(){
+    mainView.innerHTML = `
+      <div class="empty-state">
+        <div class="mark">N</div>
+        <div>Wähle eine Notiz aus, erstelle eine neue oder lade eine gespeicherte Datei.</div>
+      </div>`;
+  }
+
+  function renderEditor(note){
+    mainView.innerHTML = `
+      <div class="top-bar">
+        <input type="text" class="title-input" id="titleInput" placeholder="Titel der Notiz" value="${escapeAttr(note.title)}">
+      </div>
+      <div class="toolbar${toolbarVisible ? '' : ' hidden'}" id="toolbar">
+        <button class="tb-btn b" data-cmd="bold" title="Fett">B</button>
+        <button class="tb-btn i" data-cmd="italic" title="Kursiv">I</button>
+        <button class="tb-btn u" data-cmd="underline" title="Unterstrichen">U</button>
+        <button class="tb-btn s" data-cmd="strikeThrough" title="Durchgestrichen">S</button>
+        <div class="tb-sep"></div>
+        <select class="tb-select" id="fontFamily" title="Schriftart">
+          <option value="'Inter', sans-serif">Inter</option>
+          <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Courier New', monospace">Courier New</option>
+        </select>
+        <select class="tb-select" id="fontSize" title="Schriftgröße">
+          <option value="13">13</option>
+          <option value="15" selected>15</option>
+          <option value="18">18</option>
+          <option value="22">22</option>
+          <option value="28">28</option>
+          <option value="36">36</option>
+        </select>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" data-cmd="justifyLeft" title="Linksbündig">⯇</button>
+        <button class="tb-btn" data-cmd="justifyCenter" title="Zentriert">≡</button>
+        <button class="tb-btn" data-cmd="justifyRight" title="Rechtsbündig">⯈</button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="insertTableBtn" title="Tabelle einfügen">⊞</button>
+        <button class="tb-btn" id="insertChecklistBtn" title="Checkliste einfügen">☑</button>
+      </div>
+      <div class="editor-wrap" id="editorWrap">
+        <div class="editor" id="editor" contenteditable="true" data-placeholder="Schreib einfach los …">${note.html || ''}</div>
+        <div class="table-toolbar" id="tableToolbar">
+          <button class="tt-add-row" title="Zeile hinzufügen">+ Zeile</button>
+          <button class="tt-remove-row" title="Zeile entfernen">− Zeile</button>
+          <div class="tb-sep"></div>
+          <button class="tt-add-col" title="Spalte hinzufügen">+ Spalte</button>
+          <button class="tt-remove-col" title="Spalte entfernen">− Spalte</button>
+          <div class="tb-sep"></div>
+          <button class="tt-delete" title="Tabelle löschen">🗑 Löschen</button>
+        </div>
+      </div>
+    `;
+
+    toolbarToggleBtn.classList.toggle('active', toolbarVisible);
+    updateFabVisibility();
+
+    const titleInput = document.getElementById('titleInput');
+    const editor = document.getElementById('editor');
+    const editorWrap = document.getElementById('editorWrap');
+    const fontFamily = document.getElementById('fontFamily');
+    const fontSize = document.getElementById('fontSize');
+    const toolbarEl = document.getElementById('toolbar');
+    const tableToolbar = document.getElementById('tableToolbar');
+    let currentTable = null;
+
+    function scheduleSave(){
+      markUnsaved();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const n = notes.find(x => x.id === note.id);
+        if (!n) return;
+        n.title = titleInput.value;
+        n.html = editor.innerHTML;
+        n.updatedAt = Date.now();
+        renderList();
+      }, 400);
+    }
+
+    titleInput.addEventListener('input', scheduleSave);
+    editor.addEventListener('input', scheduleSave);
+
+    toolbarEl.querySelectorAll('[data-cmd]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editor.focus();
+        document.execCommand(btn.dataset.cmd, false, null);
+      });
+    });
+
+    fontFamily.addEventListener('change', () => {
+      editor.focus();
+      document.execCommand('fontName', false, fontFamily.value);
+      scheduleSave();
+    });
+
+    fontSize.addEventListener('change', () => {
+      editor.focus();
+      applyFontSize(editor, fontSize.value);
+      scheduleSave();
+    });
+
+    document.getElementById('insertTableBtn').addEventListener('click', () => {
+      openTableSizeModal((rows, cols) => {
+        editor.focus();
+        insertTable(editor, rows, cols);
+        scheduleSave();
+      });
+    });
+
+    document.getElementById('insertChecklistBtn').addEventListener('click', () => {
+      editor.focus();
+      insertChecklistItem(editor);
+      scheduleSave();
+    });
+
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        const node = sel.anchorNode;
+        const parentSpan = node && node.nodeType === 3 ? node.parentElement : node;
+        const checklistItem = parentSpan ? parentSpan.closest('.checklist-item') : null;
+        if (checklistItem){
+          e.preventDefault();
+          insertChecklistItem(editor, checklistItem);
+          scheduleSave();
+        }
+      }
+    });
+
+    /* checkbox toggle + checklist delete (delegated so it survives reload) */
+    editor.addEventListener('change', (e) => {
+      if (e.target.matches && e.target.matches('.checklist-item input[type="checkbox"]')){
+        const item = e.target.closest('.checklist-item');
+        item.classList.toggle('checked', e.target.checked);
+        scheduleSave();
+      }
+    });
+
+    editor.addEventListener('click', (e) => {
+      const delBtn = e.target.closest && e.target.closest('.checklist-del-btn');
+      if (delBtn){
+        const item = delBtn.closest('.checklist-item');
+        if (item) item.remove();
+        scheduleSave();
+      }
+    });
+
+    /* ---------- Table floating toolbar ---------- */
+    function positionTableToolbar(table){
+      const tRect = table.getBoundingClientRect();
+      const wRect = editorWrap.getBoundingClientRect();
+      tableToolbar.style.top = (tRect.top - wRect.top + editorWrap.scrollTop - 42) + 'px';
+      tableToolbar.style.left = (tRect.left - wRect.left) + 'px';
+      tableToolbar.style.display = 'flex';
+    }
+
+    function showTableToolbarFor(table){
+      currentTable = table;
+      positionTableToolbar(table);
+    }
+
+    function hideTableToolbar(){
+      tableToolbar.style.display = 'none';
+      currentTable = null;
+    }
+
+    editor.addEventListener('focusin', (e) => {
+      const td = e.target.closest && e.target.closest('td');
+      if (td){
+        const table = td.closest('table.note-table');
+        if (table) showTableToolbarFor(table);
+      }
+    });
+
+    editor.addEventListener('click', (e) => {
+      const table = e.target.closest && e.target.closest('table.note-table');
+      if (table) showTableToolbarFor(table);
+    });
+
+    tableToolbar.querySelector('.tt-add-row').addEventListener('click', () => {
+      if (!currentTable) return;
+      addTableRow(currentTable);
+      positionTableToolbar(currentTable);
+      scheduleSave();
+    });
+    tableToolbar.querySelector('.tt-remove-row').addEventListener('click', () => {
+      if (!currentTable) return;
+      removeTableRow(currentTable);
+      positionTableToolbar(currentTable);
+      scheduleSave();
+    });
+    tableToolbar.querySelector('.tt-add-col').addEventListener('click', () => {
+      if (!currentTable) return;
+      addTableCol(currentTable);
+      positionTableToolbar(currentTable);
+      scheduleSave();
+    });
+    tableToolbar.querySelector('.tt-remove-col').addEventListener('click', () => {
+      if (!currentTable) return;
+      removeTableCol(currentTable);
+      positionTableToolbar(currentTable);
+      scheduleSave();
+    });
+    tableToolbar.querySelector('.tt-delete').addEventListener('click', () => {
+      if (!currentTable) return;
+      currentTable.remove();
+      hideTableToolbar();
+      scheduleSave();
+    });
+
+    if (outsideClickHandler){
+      document.removeEventListener('click', outsideClickHandler, true);
+    }
+    outsideClickHandler = function(e){
+      if (tableToolbar.contains(e.target)) return;
+      if (e.target.closest && e.target.closest('table.note-table')) return;
+      hideTableToolbar();
+    };
+    document.addEventListener('click', outsideClickHandler, true);
+
+    editor.focus();
+  }
+
+  /* ---------- Formatting helpers ---------- */
+  function applyFontSize(editor, px){
+    document.execCommand('fontSize', false, '7');
+    editor.querySelectorAll('font[size="7"]').forEach(el => {
+      el.removeAttribute('size');
+      el.style.fontSize = px + 'px';
+    });
+  }
+
+  function insertTable(editor, rows, cols){
+    rows = Math.max(1, Math.min(12, rows || 3));
+    cols = Math.max(1, Math.min(10, cols || 3));
+    let html = '<table class="note-table"><tbody>';
+    for (let r = 0; r < rows; r++){
+      html += '<tr>';
+      for (let c = 0; c < cols; c++){
+        html += '<td contenteditable="true">&nbsp;</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br></p>';
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function addTableRow(table){
+    const rows = table.querySelectorAll('tr');
+    const colCount = rows.length ? rows[0].children.length : 1;
+    const tr = document.createElement('tr');
+    for (let i = 0; i < colCount; i++){
+      const td = document.createElement('td');
+      td.setAttribute('contenteditable', 'true');
+      td.innerHTML = '&nbsp;';
+      tr.appendChild(td);
+    }
+    table.querySelector('tbody').appendChild(tr);
+  }
+
+  function removeTableRow(table){
+    const tbody = table.querySelector('tbody');
+    if (tbody.children.length > 1) tbody.removeChild(tbody.lastElementChild);
+  }
+
+  function addTableCol(table){
+    table.querySelectorAll('tr').forEach(tr => {
+      const td = document.createElement('td');
+      td.setAttribute('contenteditable', 'true');
+      td.innerHTML = '&nbsp;';
+      tr.appendChild(td);
+    });
+  }
+
+  function removeTableCol(table){
+    const rows = table.querySelectorAll('tr');
+    if (rows.length && rows[0].children.length > 1){
+      rows.forEach(tr => tr.removeChild(tr.lastElementChild));
+    }
+  }
+
+  function insertChecklistItem(editor, afterEl){
+    const div = document.createElement('div');
+    div.className = 'checklist-item';
+    div.setAttribute('contenteditable', 'false');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+
+    const span = document.createElement('span');
+    span.setAttribute('contenteditable', 'true');
+    span.textContent = '';
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'checklist-del-btn';
+    delBtn.title = 'Punkt löschen';
+    delBtn.innerHTML = '&times;';
+
+    div.appendChild(checkbox);
+    div.appendChild(span);
+    div.appendChild(delBtn);
+
+    if (afterEl && afterEl.parentNode){
+      afterEl.parentNode.insertBefore(div, afterEl.nextSibling);
+    } else {
+      editor.appendChild(div);
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(span);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    span.focus();
+  }
+
+  /* ---------- Table size modal ---------- */
+  function openTableSizeModal(onConfirm){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal-box">
+        <h3>Tabellengröße</h3>
+        <div class="modal-row">
+          <label>Zeilen<input type="number" id="modalRows" min="1" max="12" value="3"></label>
+          <label>Spalten<input type="number" id="modalCols" min="1" max="10" value="3"></label>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" id="modalCancelBtn">Abbrechen</button>
+          <button class="modal-btn confirm" id="modalConfirmBtn">Einfügen</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#modalCancelBtn').addEventListener('click', close);
+    backdrop.querySelector('#modalConfirmBtn').addEventListener('click', () => {
+      const rows = parseInt(backdrop.querySelector('#modalRows').value, 10) || 3;
+      const cols = parseInt(backdrop.querySelector('#modalCols').value, 10) || 3;
+      close();
+      onConfirm(rows, cols);
+    });
+    backdrop.querySelector('#modalRows').focus();
+  }
+
+  /* ---------- Note actions ---------- */
+  function selectNote(id){
+    currentId = id;
+    const note = notes.find(n => n.id === id);
+    if (!note){ renderEmptyState(); updateFabVisibility(); return; }
+    renderList();
+    renderEditor(note);
+  }
+
+  function newNote(){
+    const note = { id: uid(), title: '', html: '', updatedAt: Date.now() };
+    notes.push(note);
+    markUnsaved();
+    currentId = note.id;
+    renderList();
+    renderEditor(note);
+    document.getElementById('titleInput').focus();
+  }
+
+  function deleteNote(id){
+    if (!confirm('Diese Notiz wirklich löschen?')) return;
+    notes = notes.filter(n => n.id !== id);
+    markUnsaved();
+    if (currentId === id){
+      const list = sortedNotes();
+      if (list.length > 0){
+        selectNote(list[0].id);
+      } else {
+        currentId = null;
+        renderList();
+        renderEmptyState();
+        updateFabVisibility();
+      }
+    } else {
+      renderList();
+    }
+  }
+
+  /* ---------- Init ---------- */
+  newNoteBtn.addEventListener('click', newNote);
+  renderList();
+  renderEmptyState();
+  updateFabVisibility();
+})();
+</script>
+</body>
+</html>
