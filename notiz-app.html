@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0c0c0e;
+    --bg-elevated: #18181b;
+    --bg-hover: #1f1f23;
+    --red: #e0293a;
+    --red-dim: #7a1420;
+    --red-glow: rgba(224,41,58,0.35);
+    --text: #ececec;
+    --text-muted: #8c8c92;
+    --border: #232327;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  ::selection { background: var(--red-dim); color: #fff; }
+  button, select, input, textarea { font-family: inherit; }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ---------- Header ---------- */
+  .header {
+    flex-shrink: 0;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 28px;
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+    color: var(--text);
+  }
+  .brand h1 span { color: var(--red); }
+
+  .save-indicator {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .save-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .save-indicator.unsaved .dot { background: var(--red); }
+  .save-indicator.unsaved { color: var(--red); }
+
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+
+  .header-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color .12s ease, color .12s ease, background .12s ease;
+  }
+  .header-btn svg { width: 17px; height: 17px; }
+  .header-btn:hover { border-color: var(--red); color: var(--red); }
+  .header-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+  .header-btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+  .header-btn.primary:hover { background: #c62230; box-shadow: 0 0 0 4px var(--red-glow); color: #fff; }
+
+  /* ---------- Format toolbar (second header row) ---------- */
+  .format-toolbar {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 28px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .format-toolbar.visible { display: flex; }
+
+  .tb-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .12s ease, border-color .12s ease;
+  }
+  .tb-btn:hover { background: var(--bg-hover); }
+  .tb-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; }
+  .tb-btn.b { font-weight: 700; }
+  .tb-btn.i { font-style: italic; font-family: Georgia, serif; }
+  .tb-btn.u { text-decoration: underline; }
+  .tb-btn.s { text-decoration: line-through; }
+
+  .tb-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+  .tb-select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12.5px;
+    padding: 6px 8px;
+    cursor: pointer;
+    outline: none;
+  }
+  .tb-select:hover { border-color: var(--text-muted); }
+
+  /* ---------- Board ---------- */
+  .board {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px 28px 100px;
+  }
+
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 20px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .entry-card {
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 18px 16px;
+    transition: border-color .15s ease;
+  }
+  .entry-card:hover { border-color: #34343a; }
+  .entry-card:focus-within { border-color: var(--red-dim); }
+
+  .entry-pin {
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 2px 6px rgba(224,41,58,0.5);
+  }
+
+  .entry-del-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    padding: 3px 7px;
+    border-radius: 5px;
+    transition: opacity .12s ease, color .12s ease, background .12s ease;
+  }
+  .entry-card:hover .entry-del-btn { opacity: 1; }
+  .entry-del-btn:hover { color: var(--red); background: rgba(224,41,58,0.12); }
+
+  .entry-title {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16.5px;
+    font-weight: 600;
+    outline: none;
+    margin-bottom: 10px;
+    padding: 2px 22px 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .entry-title::placeholder { color: #4a4a4e; }
+
+  .entry-content {
+    min-height: 70px;
+    outline: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .entry-content:empty::before { content: attr(data-placeholder); color: #4a4a4e; }
+
+  /* ---------- Todo card ---------- */
+  .todo-progress {
+    height: 6px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .todo-progress-bar {
+    height: 100%;
+    background: var(--red);
+    transition: width .2s ease;
+  }
+  .todo-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .todo-item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--red);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .todo-text {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--text);
+    font-size: 13.5px;
+    outline: none;
+    padding: 5px 0;
+    min-width: 0;
+  }
+  .todo-text:focus { border-bottom-color: var(--border); }
+  .todo-item.checked .todo-text { text-decoration: line-through; color: var(--text-muted); }
+  .todo-item-del {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+    opacity: 0;
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: opacity .12s ease, color .12s ease, background .12s ease;
+  }
+  .todo-item:hover .todo-item-del { opacity: 1; }
+  .todo-item-del:hover { color: var(--red); background: rgba(224,41,58,0.12); }
+
+  .todo-add-item {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color .12s ease, color .12s ease;
+  }
+  .todo-add-item:hover { border-color: var(--red); color: var(--red); }
+
+  .board-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 14px;
+    padding-top: 10vh;
+  }
+  .board-empty .mark {
+    width: 46px; height: 46px;
+    border: 2px solid var(--red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--red);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+  }
+
+  /* ---------- Toolbar toggle button (in header, next to "new entry") ---------- */
+  .toolbar-toggle-btn.active {
+    background: var(--red-dim);
+    border-color: var(--red);
+    color: #fff;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+    width: 300px;
+  }
+  .modal-box h3 {
+    margin: 0 0 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .modal-choice-row {
+    display: flex;
+    gap: 10px;
+  }
+  .modal-choice-btn {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 16px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: border-color .12s ease, color .12s ease, background .12s ease;
+  }
+  .modal-choice-btn svg { width: 22px; height: 22px; }
+  .modal-choice-btn:hover { border-color: var(--red); color: var(--red); background: rgba(224,41,58,0.08); }
+
+  @media (max-width: 640px) {
+    .header-main { padding: 12px 16px; }
+    .format-toolbar { padding: 10px 16px; }
+    .brand h1 { font-size: 16px; }
+    .board { padding: 20px 16px 100px; }
+    .save-indicator span:not(.dot) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="header">
+    <div class="header-main">
+      <div class="brand">
+        <h1>NOTOX<span>.</span></h1>
+        <div class="save-indicator" id="saveIndicator"><span class="dot"></span><span id="saveIndicatorText">Gespeichert</span></div>
+      </div>
+      <div class="header-actions">
+        <button class="header-btn primary" id="newEntryBtn" title="Neuer Eintrag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <button class="header-btn toolbar-toggle-btn" id="toolbarToggleBtn" title="Formatierung ein-/ausblenden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+          </svg>
+        </button>
+        <button class="header-btn" id="importBtn" title="Brett laden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        </button>
+        <button class="header-btn" id="exportBtn" title="Brett speichern">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+        </button>
+        <input type="file" id="importInput" accept="application/json,.json" style="display:none">
+      </div>
+    </div>
+    <div class="format-toolbar" id="formatToolbar">
+      <button class="tb-btn b" data-cmd="bold" title="Fett">B</button>
+      <button class="tb-btn i" data-cmd="italic" title="Kursiv">I</button>
+      <button class="tb-btn u" data-cmd="underline" title="Unterstrichen">U</button>
+      <button class="tb-btn s" data-cmd="strikeThrough" title="Durchgestrichen">S</button>
+      <div class="tb-sep"></div>
+      <select class="tb-select" id="fontFamily" title="Schriftart">
+        <option value="'Inter', sans-serif">Inter</option>
+        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Courier New', monospace">Courier New</option>
+      </select>
+      <select class="tb-select" id="fontSize" title="Schriftgröße">
+        <option value="12">12</option>
+        <option value="14" selected>14</option>
+        <option value="16">16</option>
+        <option value="20">20</option>
+        <option value="26">26</option>
+      </select>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" data-cmd="justifyLeft" title="Linksbündig">⯇</button>
+      <button class="tb-btn" data-cmd="justifyCenter" title="Zentriert">≡</button>
+      <button class="tb-btn" data-cmd="justifyRight" title="Rechtsbündig">⯈</button>
+    </div>
+  </header>
+
+  <main class="board" id="board"></main>
+</div>
+
+<script>
+(function(){
+  const board = document.getElementById('board');
+  const newEntryBtn = document.getElementById('newEntryBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const importInput = document.getElementById('importInput');
+  const saveIndicator = document.getElementById('saveIndicator');
+  const saveIndicatorText = document.getElementById('saveIndicatorText');
+  const toolbarToggleBtn = document.getElementById('toolbarToggleBtn');
+  const formatToolbar = document.getElementById('formatToolbar');
+  const fontFamily = document.getElementById('fontFamily');
+  const fontSize = document.getElementById('fontSize');
+
+  let entries = [];
+  let saveTimer = null;
+  let unsavedChanges = false;
+  let toolbarVisible = false;
+  let lastActive = null; // { editable, range }
+
+  /* ---------- Selection tracking (so the shared toolbar knows which card to format) ---------- */
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const anchor = sel.anchorNode;
+    const node = anchor && (anchor.nodeType === 3 ? anchor.parentElement : anchor);
+    const editable = node ? node.closest('.entry-content') : null;
+    if (editable) {
+      lastActive = { editable, range: sel.getRangeAt(0).cloneRange() };
+    }
+  });
+
+  function restoreSelection(){
+    if (!lastActive || !document.body.contains(lastActive.editable)) return false;
+    lastActive.editable.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(lastActive.range);
+    return true;
+  }
+
+  /* ---------- Format toolbar ---------- */
+  toolbarToggleBtn.addEventListener('click', () => {
+    toolbarVisible = !toolbarVisible;
+    formatToolbar.classList.toggle('visible', toolbarVisible);
+    toolbarToggleBtn.classList.toggle('active', toolbarVisible);
+  });
+
+  formatToolbar.querySelectorAll('[data-cmd]').forEach(btn => {
+    btn.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.addEventListener('click', () => {
+      if (!restoreSelection()) return;
+      document.execCommand(btn.dataset.cmd, false, null);
+      markUnsaved();
+    });
+  });
+
+  fontFamily.addEventListener('change', () => {
+    if (!restoreSelection()) return;
+    document.execCommand('fontName', false, fontFamily.value);
+    markUnsaved();
+  });
+
+  fontSize.addEventListener('change', () => {
+    if (!restoreSelection()) return;
+    const editable = lastActive.editable;
+    document.execCommand('fontSize', false, '7');
+    editable.querySelectorAll('font[size="7"]').forEach(el => {
+      el.removeAttribute('size');
+      el.style.fontSize = fontSize.value + 'px';
+    });
+    markUnsaved();
+  });
+
+  /* ---------- Unsaved-changes indicator ---------- */
+  function markUnsaved(){
+    unsavedChanges = true;
+    saveIndicator.classList.add('unsaved');
+    saveIndicatorText.textContent = 'Ungespeichert';
+  }
+  function markSaved(){
+    unsavedChanges = false;
+    saveIndicator.classList.remove('unsaved');
+    saveIndicatorText.textContent = 'Gespeichert';
+  }
+
+  /* ---------- Helpers ---------- */
+  function uid(prefix){ return (prefix || 'id') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+  function escapeAttr(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML.replace(/"/g, '&quot;');
+  }
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  /* ---------- Entry type choice modal ---------- */
+  function openEntryTypeModal(onChoose){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal-box">
+        <h3>Was möchtest du anlegen?</h3>
+        <div class="modal-choice-row">
+          <button class="modal-choice-btn" id="choiceNote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>
+            Notiz
+          </button>
+          <button class="modal-choice-btn" id="choiceTodo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg>
+            Todo-Liste
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const close = () => backdrop.remove();
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    backdrop.querySelector('#choiceNote').addEventListener('click', () => { close(); onChoose('note'); });
+    backdrop.querySelector('#choiceTodo').addEventListener('click', () => { close(); onChoose('todo'); });
+  }
+
+  /* ---------- Sync (for note entries, on debounce) ---------- */
+  function syncNoteFromCard(card){
+    const id = card.dataset.id;
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+    entry.title = card.querySelector('.entry-title').value;
+    entry.html = card.querySelector('.entry-content').innerHTML;
+    entry.updatedAt = Date.now();
+  }
+
+  function scheduleNoteSave(card){
+    markUnsaved();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => syncNoteFromCard(card), 300);
+  }
+
+  /* ---------- Todo helpers ---------- */
+  function updateTodoProgress(card, entry){
+    const bar = card.querySelector('.todo-progress-bar');
+    const meta = card.querySelector('.todo-meta');
+    const total = entry.items.length;
+    const done = entry.items.filter(i => i.done).length;
+    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+    if (bar) bar.style.width = pct + '%';
+    if (meta) meta.textContent = done + ' / ' + total + ' erledigt';
+  }
+
+  function addTodoItemToDom(card, entry, item){
+    const list = card.querySelector('.todo-list');
+    const row = document.createElement('div');
+    row.className = 'todo-item' + (item.done ? ' checked' : '');
+    row.dataset.itemId = item.id;
+    row.innerHTML = `
+      <input type="checkbox" ${item.done ? 'checked' : ''}>
+      <input type="text" class="todo-text" placeholder="Aufgabe …" value="${escapeAttr(item.text)}">
+      <button class="todo-item-del" title="Löschen">&times;</button>
+    `;
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const textInput = row.querySelector('.todo-text');
+    const delBtn = row.querySelector('.todo-item-del');
+
+    checkbox.addEventListener('change', () => {
+      item.done = checkbox.checked;
+      row.classList.toggle('checked', item.done);
+      entry.updatedAt = Date.now();
+      markUnsaved();
+      updateTodoProgress(card, entry);
+    });
+
+    let textTimer = null;
+    textInput.addEventListener('input', () => {
+      markUnsaved();
+      clearTimeout(textTimer);
+      textTimer = setTimeout(() => {
+        item.text = textInput.value;
+        entry.updatedAt = Date.now();
+      }, 300);
+    });
+
+    delBtn.addEventListener('click', () => {
+      entry.items = entry.items.filter(i => i.id !== item.id);
+      entry.updatedAt = Date.now();
+      markUnsaved();
+      row.remove();
+      updateTodoProgress(card, entry);
+    });
+
+    list.appendChild(row);
+    return textInput;
+  }
+
+  /* ---------- Board rendering ---------- */
+  function renderBoard(){
+    if (entries.length === 0){
+      board.innerHTML = `
+        <div class="board-empty">
+          <div class="mark">N</div>
+          <div>Das Brett ist leer. Füge über „+" eine Notiz oder Todo-Liste hinzu.</div>
+        </div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'board-grid';
+
+    entries.slice().sort((a,b) => b.updatedAt - a.updatedAt).forEach(entry => {
+      const card = document.createElement('div');
+      card.className = 'entry-card';
+      card.dataset.id = entry.id;
+
+      if (entry.type === 'todo'){
+        const total = entry.items.length;
+        const done = entry.items.filter(i => i.done).length;
+        const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+        card.innerHTML = `
+          <div class="entry-pin"></div>
+          <button class="entry-del-btn" title="Eintrag löschen">&times;</button>
+          <input type="text" class="entry-title" placeholder="Titel" value="${escapeAttr(entry.title)}">
+          <div class="todo-progress"><div class="todo-progress-bar" style="width:${pct}%"></div></div>
+          <div class="todo-meta">${done} / ${total} erledigt</div>
+          <div class="todo-list"></div>
+          <button class="todo-add-item">+ Aufgabe hinzufügen</button>
+        `;
+
+        const titleInput = card.querySelector('.entry-title');
+        const delBtn = card.querySelector('.entry-del-btn');
+        const addBtn = card.querySelector('.todo-add-item');
+
+        titleInput.addEventListener('input', () => {
+          markUnsaved();
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(() => { entry.title = titleInput.value; entry.updatedAt = Date.now(); }, 300);
+        });
+        delBtn.addEventListener('click', () => deleteEntry(entry.id));
+
+        entry.items.forEach(item => addTodoItemToDom(card, entry, item));
+
+        addBtn.addEventListener('click', () => {
+          const item = { id: uid('item'), text: '', done: false };
+          entry.items.push(item);
+          entry.updatedAt = Date.now();
+          markUnsaved();
+          const input = addTodoItemToDom(card, entry, item);
+          updateTodoProgress(card, entry);
+          input.focus();
+        });
+
+      } else {
+        card.innerHTML = `
+          <div class="entry-pin"></div>
+          <button class="entry-del-btn" title="Eintrag löschen">&times;</button>
+          <input type="text" class="entry-title" placeholder="Titel" value="${escapeAttr(entry.title)}">
+          <div class="entry-content" contenteditable="true" data-placeholder="Text schreiben …">${entry.html || ''}</div>
+        `;
+
+        const titleInput = card.querySelector('.entry-title');
+        const content = card.querySelector('.entry-content');
+        const delBtn = card.querySelector('.entry-del-btn');
+
+        titleInput.addEventListener('input', () => scheduleNoteSave(card));
+        content.addEventListener('input', () => scheduleNoteSave(card));
+        delBtn.addEventListener('click', () => deleteEntry(entry.id));
+      }
+
+      grid.appendChild(card);
+    });
+
+    board.innerHTML = '';
+    board.appendChild(grid);
+  }
+
+  function createNoteEntry(){
+    const entry = { id: uid('entry'), type: 'note', title: '', html: '', updatedAt: Date.now() };
+    entries.push(entry);
+    markUnsaved();
+    renderBoard();
+    const card = board.querySelector(`[data-id="${entry.id}"]`);
+    if (card) card.querySelector('.entry-title').focus();
+  }
+
+  function createTodoEntry(){
+    const entry = { id: uid('entry'), type: 'todo', title: '', items: [], updatedAt: Date.now() };
+    entries.push(entry);
+    markUnsaved();
+    renderBoard();
+    const card = board.querySelector(`[data-id="${entry.id}"]`);
+    if (card) card.querySelector('.entry-title').focus();
+  }
+
+  function deleteEntry(id){
+    if (!confirm('Diesen Eintrag wirklich löschen?')) return;
+    entries = entries.filter(e => e.id !== id);
+    markUnsaved();
+    renderBoard();
+  }
+
+  /* ---------- JSON file export / import ---------- */
+  function exportBoard(){
+    board.querySelectorAll('.entry-card').forEach(card => {
+      const entry = entries.find(e => e.id === card.dataset.id);
+      if (entry && entry.type !== 'todo') syncNoteFromCard(card);
+    });
+    const payload = JSON.stringify(entries, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'notox-brett-' + stamp + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    markSaved();
+  }
+
+  function importBoardFromFile(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch(e){
+        alert('Die Datei ist keine gültige JSON-Datei.');
+        return;
+      }
+      if (!Array.isArray(parsed)){
+        alert('Die Datei enthält kein gültiges Schwarzes Brett.');
+        return;
+      }
+      if (entries.length > 0 && !confirm('Das aktuelle Brett wird durch die Datei ersetzt. Fortfahren?')){
+        return;
+      }
+      entries = parsed.map(e => {
+        if (e.type === 'todo'){
+          return {
+            id: e.id || uid('entry'),
+            type: 'todo',
+            title: typeof e.title === 'string' ? e.title : '',
+            items: Array.isArray(e.items) ? e.items.map(i => ({
+              id: i.id || uid('item'),
+              text: typeof i.text === 'string' ? i.text : '',
+              done: !!i.done
+            })) : [],
+            updatedAt: e.updatedAt || Date.now()
+          };
+        }
+        return {
+          id: e.id || uid('entry'),
+          type: 'note',
+          title: typeof e.title === 'string' ? e.title : '',
+          html: typeof e.html === 'string' ? e.html : '',
+          updatedAt: e.updatedAt || Date.now()
+        };
+      });
+      markSaved();
+      renderBoard();
+    };
+    reader.readAsText(file);
+  }
+
+  newEntryBtn.addEventListener('click', () => {
+    openEntryTypeModal((type) => {
+      if (type === 'todo') createTodoEntry();
+      else createNoteEntry();
+    });
+  });
+  exportBtn.addEventListener('click', exportBoard);
+  importBtn.addEventListener('click', () => importInput.click());
+  importInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importBoardFromFile(file);
+    importInput.value = '';
+  });
+
+  /* ---------- Init ---------- */
+  markSaved();
+  renderBoard();
+})();
+</script>
+</body>
+</html>
